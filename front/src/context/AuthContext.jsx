@@ -1,81 +1,61 @@
-import React, { createContext, useState, useContext } from 'react';
+import { createContext, useContext, useState } from 'react';
 import axios from 'axios';
 
-const AuthContext = createContext(null);
+const AuthContext = createContext();
+
+export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
-  const handleGoogleSuccess = async (credentialResponse) => {
+  const signInWithGoogle = async (token) => {
     try {
       setLoading(true);
       setError(null);
-      const { credential } = credentialResponse;
-      
-      // Send the credential to your backend
-      const response = await axios.post('http://localhost:5000/api/auth/google', {
-        credential
-      });
-
-      if (response.data.user) {
-        setUser(response.data.user);
-        localStorage.setItem('token', response.data.token);
-      }
+      const response = await axios.post('http://localhost:5000/api/auth/google', { token });
+      setUser(response.data);
+      setShowSuccessDialog(true);
     } catch (error) {
-      setError(error.response?.data?.message || 'Google login failed');
-      console.error('Google login error:', error);
+      console.error('Google sign in error:', error);
+      setError(error.response?.data?.message || 'Failed to sign in with Google');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleFacebookLogin = async (response) => {
+  const signInWithFacebook = async (token) => {
     try {
       setLoading(true);
       setError(null);
-      
-      // Send the Facebook response to your backend
-      const result = await axios.post('http://localhost:5000/api/auth/facebook', {
-        accessToken: response.authResponse.accessToken
-      });
-
-      if (result.data.user) {
-        setUser(result.data.user);
-        localStorage.setItem('token', result.data.token);
-      }
+      const response = await axios.post('http://localhost:5000/api/auth/facebook', { token });
+      setUser(response.data);
+      setShowSuccessDialog(true);
     } catch (error) {
-      setError(error.response?.data?.message || 'Facebook login failed');
-      console.error('Facebook login error:', error);
+      console.error('Facebook sign in error:', error);
+      setError(error.response?.data?.message || 'Failed to sign in with Facebook');
     } finally {
       setLoading(false);
     }
   };
 
-  const logout = () => {
+  const signOut = () => {
     setUser(null);
-    localStorage.removeItem('token');
+    setShowSuccessDialog(false);
   };
 
-  return (
-    <AuthContext.Provider value={{
-      user,
-      loading,
-      error,
-      handleGoogleSuccess,
-      handleFacebookLogin,
-      logout
-    }}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
+  const value = {
+    user,
+    loading,
+    error,
+    showSuccessDialog,
+    setShowSuccessDialog,
+    signInWithGoogle,
+    signInWithFacebook,
+    signOut
+  };
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }; 
