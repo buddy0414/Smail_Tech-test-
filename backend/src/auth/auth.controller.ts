@@ -16,9 +16,9 @@ export class AuthController {
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   async googleAuthCallback(@Req() req, @Res() res: Response) {
-    const result = await this.authService.validateGoogleUser(req.user);
+    const result = await this.authService.validateGoogleToken(req.user.credential);
     // Redirect to frontend with token
-    res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${result.access_token}`);
+    res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${result.token}`);
   }
 
   @Get('facebook')
@@ -30,9 +30,9 @@ export class AuthController {
   @Get('facebook/callback')
   @UseGuards(AuthGuard('facebook'))
   async facebookAuthCallback(@Req() req, @Res() res: Response) {
-    const result = await this.authService.validateFacebookUser(req.user);
+    const result = await this.authService.validateFacebookToken(req.user.accessToken);
     // Redirect to frontend with token
-    res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${result.access_token}`);
+    res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${result.token}`);
   }
 
   @Post('google')
