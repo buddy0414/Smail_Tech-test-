@@ -46,4 +46,10 @@ export class AuthController {
   async facebookAuthPost(@Body() body: { accessToken: string }) {
     return this.authService.validateFacebookToken(body.accessToken);
   }
+
+  @Get('verify')
+  @UseGuards(AuthGuard('jwt'))
+  async verifyToken(@Req() req) {
+    return { user: req.user };
+  }
 } 
