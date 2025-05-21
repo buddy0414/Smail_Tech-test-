@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Req, Res, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, UseGuards, Req, Res, Post, Body, HttpCode, HttpStatus, UnauthorizedException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { Response } from 'express';
@@ -35,16 +35,29 @@ export class AuthController {
     res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${result.token}`);
   }
 
+  @Post('register')
+  async register(
+    @Body() userData: {
+      email: string;
+      password: string;
+      firstName: string;
+      lastName: string;
+      username: string;
+    }
+  ) {
+    return this.authService.register(userData);
+  }
+
   @Post('google')
   @HttpCode(HttpStatus.OK)
-  async googleAuthPost(@Body() body: { credential: string }) {
-    return this.authService.validateGoogleToken(body.credential);
+  async googleAuthPost(@Body('credential') credential: string) {
+    return this.authService.validateGoogleToken(credential);
   }
 
   @Post('facebook')
   @HttpCode(HttpStatus.OK)
-  async facebookAuthPost(@Body() body: { accessToken: string }) {
-    return this.authService.validateFacebookToken(body.accessToken);
+  async facebookAuthPost(@Body('accessToken') accessToken: string) {
+    return this.authService.validateFacebookToken(accessToken);
   }
 
   @Get('verify')

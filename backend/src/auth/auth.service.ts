@@ -1,8 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { OAuth2Client } from 'google-auth-library';
 import axios from 'axios';
 import { PrismaService } from '../prisma/prisma.service';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -13,6 +14,57 @@ export class AuthService {
     private jwtService: JwtService,
   ) {
     this.googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+  }
+
+  async register(userData: {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    username: string;
+  }) {
+    // Check if user already exists
+    const existingUser = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: userData.email },
+          { username: userData.username }
+        ]
+      }
+    });
+
+    if (existingUser) {
+      throw new ConflictException('User with this email or username already exists');
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(userData.password, 10);
+
+    // Create user
+    const user = await this.prisma.user.create({
+      data: {
+        email: userData.email,
+        password: hashedPassword,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        username: userData.username,
+        provider: 'LOCAL'
+      }
+    });
+
+    // Generate JWT token
+    const token = this.jwtService.sign({
+      sub: user.id,
+      email: user.email,
+    });
+
+    // Remove password from response
+    const { password, ...userWithoutPassword } = user;
+
+    return {
+      user: userWithoutPassword,
+      token,
+    };
   }
 
   async validateGoogleToken(credential: string) {

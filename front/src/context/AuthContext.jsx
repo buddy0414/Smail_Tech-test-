@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }) => {
         credential
       });
 
-      if (response.data.user) {
+      if (response.data.user && response.data.token) {
         setUser(response.data.user);
         localStorage.setItem('token', response.data.token);
       }
@@ -66,7 +66,7 @@ export const AuthProvider = ({ children }) => {
         accessToken: response.authResponse.accessToken
       });
 
-      if (result.data.user) {
+      if (result.data.user && result.data.token) {
         setUser(result.data.user);
         localStorage.setItem('token', result.data.token);
       }
@@ -88,6 +88,7 @@ export const AuthProvider = ({ children }) => {
   return (
     <AuthContext.Provider value={{
       user,
+      setUser,
       loading,
       error,
       handleGoogleSuccess,

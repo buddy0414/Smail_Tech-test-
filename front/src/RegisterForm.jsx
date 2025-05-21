@@ -7,7 +7,7 @@ import LoggedInView from './components/LoggedInView';
 import axios from 'axios';
 
 const RegisterForm = ({ onClose }) => {
-  const { user, handleGoogleSuccess, handleFacebookLogin, error, logout } = useAuth();
+  const { user, handleGoogleSuccess, handleFacebookLogin, error, logout, setUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
   const [popupMessage, setPopupMessage] = useState('');
@@ -99,26 +99,37 @@ const RegisterForm = ({ onClose }) => {
       setLoading(true);
       const response = await axios.post('http://localhost:5000/api/auth/register', formData);
       
-      if (response.data.user) {
-        setUser(response.data.user);
+      if (response.data.user && response.data.token) {
+        // Store token in localStorage
         localStorage.setItem('token', response.data.token);
+        
+        // Update auth context with user data
+        setUser(response.data.user);
+        
+        // Show success message
+        setPopupMessage('Registration successful! Welcome to trendies.');
+        setPopupType('success');
+        setShowPopup(true);
       }
     } catch (error) {
-      setPopupMessage(error.response?.data?.message || 'Registration failed');
+      let errorMessage = 'Registration failed';
+      
+      if (error.response) {
+        // Handle specific error messages from the backend
+        if (error.response.status === 409) {
+          errorMessage = 'User with this email or username already exists';
+        } else if (error.response.data?.message) {
+          errorMessage = error.response.data.message;
+        }
+      }
+      
+      setPopupMessage(errorMessage);
       setPopupType('error');
       setShowPopup(true);
     } finally {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    if (user) {
-      setPopupMessage('Successfully logged in!');
-      setPopupType('success');
-      setShowPopup(true);
-    }
-  }, [user]);
 
   const handleGoogleSuccessWrapper = async (credentialResponse) => {
     try {

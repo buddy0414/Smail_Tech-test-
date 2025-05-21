@@ -32,11 +32,14 @@ let AuthController = class AuthController {
         const result = await this.authService.validateFacebookToken(req.user.accessToken);
         res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${result.token}`);
     }
-    async googleAuthPost(body) {
-        return this.authService.validateGoogleToken(body.credential);
+    async register(userData) {
+        return this.authService.register(userData);
     }
-    async facebookAuthPost(body) {
-        return this.authService.validateFacebookToken(body.accessToken);
+    async googleAuthPost(credential) {
+        return this.authService.validateGoogleToken(credential);
+    }
+    async facebookAuthPost(accessToken) {
+        return this.authService.validateFacebookToken(accessToken);
     }
     async verifyToken(req) {
         return { user: req.user };
@@ -76,19 +79,26 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "facebookAuthCallback", null);
 __decorate([
-    (0, common_1.Post)('google'),
-    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, common_1.Post)('register'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "register", null);
+__decorate([
+    (0, common_1.Post)('google'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    __param(0, (0, common_1.Body)('credential')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "googleAuthPost", null);
 __decorate([
     (0, common_1.Post)('facebook'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
-    __param(0, (0, common_1.Body)()),
+    __param(0, (0, common_1.Body)('accessToken')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "facebookAuthPost", null);
 __decorate([
