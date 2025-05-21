@@ -4,9 +4,11 @@ import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from './context/AuthContext';
 import AuthPopup from './components/AuthPopup';
 import LoggedInView from './components/LoggedInView';
+import axios from 'axios';
 
 const RegisterForm = ({ onClose }) => {
-  const { user, handleGoogleSuccess, handleFacebookLogin, loading, error, logout } = useAuth();
+  const { user, handleGoogleSuccess, handleFacebookLogin, error, logout } = useAuth();
+  const [loading, setLoading] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
   const [popupMessage, setPopupMessage] = useState('');
   const [popupType, setPopupType] = useState('success');
@@ -17,6 +19,7 @@ const RegisterForm = ({ onClose }) => {
     email: '',
     password: ''
   });
+  const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
     // Load Facebook SDK
@@ -50,17 +53,63 @@ const RegisterForm = ({ onClose }) => {
     }, { scope: 'email,public_profile' });
   };
 
+  const validateForm = () => {
+    const errors = {};
+    if (!formData.firstName.trim()) errors.firstName = 'First name is required';
+    if (!formData.lastName.trim()) errors.lastName = 'Last name is required';
+    if (!formData.username.trim()) errors.username = 'Username is required';
+    if (!formData.email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      errors.email = 'Email is invalid';
+    }
+    if (!formData.password) {
+      errors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      errors.password = 'Password must be at least 6 characters';
+    }
+    return errors;
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+    // Clear error when user starts typing
+    if (formErrors[name]) {
+      setFormErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle form submission
+    const errors = validateForm();
+    
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await axios.post('http://localhost:5000/api/auth/register', formData);
+      
+      if (response.data.user) {
+        setUser(response.data.user);
+        localStorage.setItem('token', response.data.token);
+      }
+    } catch (error) {
+      setPopupMessage(error.response?.data?.message || 'Registration failed');
+      setPopupType('error');
+      setShowPopup(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -143,60 +192,90 @@ const RegisterForm = ({ onClose }) => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">First name <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium mb-1">
+              First name <span className="text-red-500">*</span>
+            </label>
             <input 
               type="text" 
               name="firstName"
               value={formData.firstName}
               onChange={handleInputChange}
-              className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black" 
-              placeholder="Enter your first name" 
+              className={`w-full border ${formErrors.firstName ? 'border-red-500' : 'border-gray-300'} rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black`}
+              placeholder="Enter your first name"
             />
+            {formErrors.firstName && (
+              <p className="text-red-500 text-xs mt-1">{formErrors.firstName}</p>
+            )}
           </div>
+
           <div>
-            <label className="block text-sm font-medium mb-1">Last name <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium mb-1">
+              Last name <span className="text-red-500">*</span>
+            </label>
             <input 
               type="text" 
               name="lastName"
               value={formData.lastName}
               onChange={handleInputChange}
-              className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black" 
-              placeholder="Enter your last name" 
+              className={`w-full border ${formErrors.lastName ? 'border-red-500' : 'border-gray-300'} rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black`}
+              placeholder="Enter your last name"
             />
+            {formErrors.lastName && (
+              <p className="text-red-500 text-xs mt-1">{formErrors.lastName}</p>
+            )}
           </div>
+
           <div>
-            <label className="block text-sm font-medium mb-1">Username <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium mb-1">
+              Username <span className="text-red-500">*</span>
+            </label>
             <input 
               type="text" 
               name="username"
               value={formData.username}
               onChange={handleInputChange}
-              className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black" 
-              placeholder="Enter your username" 
+              className={`w-full border ${formErrors.username ? 'border-red-500' : 'border-gray-300'} rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black`}
+              placeholder="Enter your username"
             />
+            {formErrors.username && (
+              <p className="text-red-500 text-xs mt-1">{formErrors.username}</p>
+            )}
           </div>
+
           <div>
-            <label className="block text-sm font-medium mb-1">Email <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium mb-1">
+              Email <span className="text-red-500">*</span>
+            </label>
             <input 
               type="email" 
               name="email"
               value={formData.email}
               onChange={handleInputChange}
-              className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black" 
-              placeholder="you@example.com" 
+              className={`w-full border ${formErrors.email ? 'border-red-500' : 'border-gray-300'} rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black`}
+              placeholder="you@example.com"
             />
+            {formErrors.email && (
+              <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>
+            )}
           </div>
+
           <div>
-            <label className="block text-sm font-medium mb-1">Password <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium mb-1">
+              Password <span className="text-red-500">*</span>
+            </label>
             <input 
               type="password" 
               name="password"
               value={formData.password}
               onChange={handleInputChange}
-              className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black" 
-              placeholder="Your password" 
+              className={`w-full border ${formErrors.password ? 'border-red-500' : 'border-gray-300'} rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black`}
+              placeholder="Your password"
             />
+            {formErrors.password && (
+              <p className="text-red-500 text-xs mt-1">{formErrors.password}</p>
+            )}
           </div>
+
           <div className="flex items-center justify-between">
             <label className="flex items-center text-sm">
               <input type="checkbox" className="mr-2 accent-black" />
@@ -204,6 +283,7 @@ const RegisterForm = ({ onClose }) => {
             </label>
             <a href="#" className="text-xs text-blue-600 hover:underline">Forgot your password?</a>
           </div>
+
           <button 
             type="submit" 
             disabled={loading}
@@ -212,6 +292,7 @@ const RegisterForm = ({ onClose }) => {
             {loading ? 'Loading...' : 'JOIN THE PRIVILEGED CIRCLE'}
           </button>
         </form>
+
         <p className="text-center text-sm text-gray-500 mt-6">
           Already have an account? <a href="#" className="text-blue-600 hover:underline">Log in</a>
         </p>
