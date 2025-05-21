@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # Smail_Tech-test-
 =======
 # Trendies - Luxury Resale Platform
@@ -164,4 +164,6 @@ For support, email support@trendies.com or join our Slack channel.
 ---
 
 Made with ❤️ for the luxury resale community in Morocco 
->>>>>>> origin/mdev
+
+=======
+# Smail_Tech-test-
